@@ -1,0 +1,89 @@
+Name:           btrfs-progs
+Version:        @VERSION@
+Release:        @DISTREL@%{?dist}
+Summary:        Userspace programs for btrfs
+
+%define libname_orig    libbtrfs
+%define major           0
+%define libname         %mklibname btrfs %{major}
+%define develname       %mklibname btrfs -d
+
+Group:          System/Kernel and hardware
+License:        GPLv2
+URL:            http://btrfs.wiki.kernel.org/
+Source0:        http://www.kernel.org/pub/linux/kernel/people/kdave/%{name}/%{name}-v%{version}.tar.xz
+# From http://www.spinics.net/lists/linux-btrfs/msg15899.html
+Source1:        btrfs-completion.sh
+Patch0:		btrfs-progs-recognize-fsck.btrfs-like-btrfsck.patch
+BuildRequires:  e2fsprogs-devel
+BuildRequires:  pkgconfig(uuid)
+BuildRequires:  pkgconfig(blkid)
+BuildRequires:  pkgconfig(zlib)
+BuildRequires:  acl-devel
+BuildRequires:  liblzo-devel
+BuildRequires:  asciidoc
+BuildRequires:  xmlto
+Requires:       %{libname_orig} = %{version}-%{release}
+
+%description
+The btrfs-progs package provides all the userpsace programs needed to create,
+check, modify and correct any inconsistencies in the btrfs filesystem.
+
+%package -n     %{libname}
+Summary:        Main library for btrfs
+Group:          System/Libraries
+Provides:       %{libname_orig} = %{version}-%{release}
+
+%description -n %{libname}
+This package contains the library needed to run programs dynamically
+linked with btrfs
+
+%package -n     %{develname}
+Summary:        Headers for developing programs that will use btrfs
+Group:          Development/C 
+Requires:       %{libname} = %{version}
+Provides:       %{libname_orig}-devel = %{version}-%{release}
+Provides:       btrfs-devel = %{version}-%{release}
+%description -n %{develname}
+This package contains the headers that programmers will need to develop
+applications which will use btrfs
+
+%prep
+%setup -q -n %{name}-v%{version}
+%autopatch -p1
+
+%build
+./autogen.sh
+%configure2_5x --bindir %{_sbindir} CFLAGS="%{optflags}" LDFLAGS="%{ldflags}"
+%make
+
+%install
+%makeinstall_std
+%{__mkdir_p} %{buildroot}%{_datadir}/bash-completion/completions
+cp %{SOURCE1} %{buildroot}%{_datadir}/bash-completion/completions/btrfs
+rm -f %{buildroot}%{_libdir}/*.a
+
+%files
+%doc COPYING INSTALL
+%{_sbindir}/btrfs
+%{_sbindir}/btrfs-convert
+%{_sbindir}/btrfs-debug-tree
+%{_sbindir}/btrfs-find-root
+%{_sbindir}/btrfs-image
+%{_sbindir}/btrfs-map-logical
+%{_sbindir}/btrfs-select-super
+%{_sbindir}/btrfs-zero-log
+%{_sbindir}/btrfsck
+%{_sbindir}/btrfstune
+%{_sbindir}/fsck.btrfs
+%{_sbindir}/mkfs.btrfs
+%{_mandir}/man*/*
+%{_datadir}/bash-completion/completions/btrfs
+#{_udevrulesdir}/64-btrfs-dm.rules
+
+%files -n %{libname}
+%{_libdir}/libbtrfs.so.%{major}{,.*}
+
+%files -n %{develname}
+%{_includedir}/btrfs/*
+%{_libdir}/libbtrfs.so
